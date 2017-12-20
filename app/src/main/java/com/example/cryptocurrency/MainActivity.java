@@ -1,6 +1,7 @@
 package com.example.cryptocurrency;
 
 import android.app.VoiceInteractor;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -25,18 +26,28 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+import static android.icu.lang.UCharacter.GraphemeClusterBreak.L;
+import static java.lang.String.valueOf;
+
+public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
 
     JSONArray arr;
-    String[] key=new String[60];
-    String[] name=new String[60];
+    List<String> key;
+    List<String> name;
+    private SwipeRefreshLayout swiper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        key=new ArrayList<>();
+        name=new ArrayList<>();
+        swiper=(SwipeRefreshLayout)findViewById(R.id.refreshing);
         ListView listview=(ListView) findViewById(R.id.listing);
+        swiper.setOnRefreshListener(this);
         final RequestQueue requestQueue=Volley.newRequestQueue(MainActivity.this);
         JsonObjectRequest jsonObjectRequest=new JsonObjectRequest(Request.Method.GET,"https://www.buyucoin.com/api/v1/crypto/",(String) null, new Response.Listener<JSONObject>() {
             @Override
@@ -49,13 +60,13 @@ public class MainActivity extends AppCompatActivity {
                         Iterator<String> it= prices.keys();
                         int i=0;
                         while (it.hasNext()){
-                            key[i]=it.next();
-                            name[i]=prices.getString(key[i]);
-                            Log.d(String.valueOf(MainActivity.this),"key:-"+key[i]+"Value"+name[i]);
+                            key.add(i,it.next());
+                            name.add(prices.getString(key.get(i)));
+                            Log.d(valueOf(MainActivity.this),"key:-"+key.get(i)+"Value"+name.get(i));
                             i++;
                         }
 
-                        Log.d(String.valueOf(MainActivity.this),String.valueOf(prices));
+                        Log.d(valueOf(MainActivity.this), valueOf(prices));
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -68,14 +79,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         requestQueue.add(jsonObjectRequest);
+
+
         customAdapter customadapter=new customAdapter();
         listview.setAdapter(customadapter);
     }
+
+    @Override
+    public void onRefresh() {
+        finish();
+        startActivity(getIntent());
+    }
+
     class customAdapter extends BaseAdapter {
 
         @Override
         public int getCount() {
-            return name.length;
+            return name.size();
         }
 
         @Override
@@ -92,9 +112,9 @@ public class MainActivity extends AppCompatActivity {
         public View getView(int i, View view, ViewGroup viewGroup) {
             view=getLayoutInflater().inflate(R.layout.customlayout,null);
             TextView tname=(TextView)view.findViewById(R.id.textname);
-            TextView tprice=(TextView)view.findViewById(R.id.textprice);
-            tname.setText(key[i]);
-            tprice.setText(name[i]);
+            TextView tprice=(TextView) view.findViewById(R.id.textprice);
+            tname.setText(key.get(i));
+            tprice.setText(name.get(i));
             return view;
         }
     }
